@@ -1,11 +1,13 @@
 package ru.nvkz.socks.servise;
 
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.nvkz.socks.dto.ResultDto;
 import ru.nvkz.socks.dto.SocksDto;
 import ru.nvkz.socks.entity.Socks;
+import ru.nvkz.socks.exception.NotEnoughException;
 import ru.nvkz.socks.mapper.SocksMapper;
 import ru.nvkz.socks.repository.SocksRepository;
 
@@ -28,8 +30,12 @@ public class SocksService {
         socksRepository.saveAll(incomeSocks);
     }
 
+
     @Transactional
     public void outcome(SocksDto socksDto) {
+        if (socksDto.getQuantity() > socksRepository.findWithEqualOperator(socksDto.getColor(), socksDto.getCottonPart()).size()) {
+            throw new NotEnoughException("Not enough socks with this parameters");
+        }
         socksRepository.deleteSocks(
                 socksDto.getColor(),
                 socksDto.getCottonPart(),
@@ -39,21 +45,12 @@ public class SocksService {
     }
 
     public ResultDto findByColorAndCottonPart(String color, String operation, Integer cottonPart) {
-        List<Socks> socksList = socksRepository.findAll();
 
         long count = switch (operation) {
-            case "moreThen" -> socksList.stream()
-                    .filter(socks -> socks.getColor().equals(color))
-                    .filter(socks -> socks.getCottonPart() > cottonPart)
-                    .count();
-            case "lessThen" -> socksList.stream()
-                    .filter(socks -> socks.getColor().equals(color))
-                    .filter(socks -> socks.getCottonPart() < cottonPart)
-                    .count();
-            case "equal" -> socksList.stream()
-                    .filter(socks -> socks.getColor().equals(color))
-                    .filter(socks -> socks.getCottonPart().equals(cottonPart))
-                    .count();
+            case "moreThen" -> socksRepository.findWithMoreThanOperator(color, cottonPart).size();
+            case "lessThen" -> socksRepository.findWithLessThanOperator(color, cottonPart).size();
+            case "equal" -> socksRepository.findWithEqualOperator(color, cottonPart).size();
+            default -> 0;
         };
         return new ResultDto(Long.toString(count));
     }

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.nvkz.socks.dto.ErrorDto;
+import ru.nvkz.socks.exception.NotEnoughException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
@@ -25,6 +26,13 @@ public class GlobalExceptionHandlerConfig {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorDto handleException(Exception exception) {
+        log.error("", exception);
+        return new ErrorDto(exception.getMessage());
+    }
+
+    @ExceptionHandler(NotEnoughException.class)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ErrorDto handleNotEnoughException(NotEnoughException exception) {
         log.error("", exception);
         return new ErrorDto(exception.getMessage());
     }
